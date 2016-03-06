@@ -1,0 +1,188 @@
+import win.ui;
+import console
+/*DSG{{*/
+mainForm = win.form(text="aardio form";right=871;bottom=663)
+mainForm.add(
+btnGoCenter={cls="button";text="归中";left=304;top=520;right=586;bottom=602;font=LOGFONT(h=-24);z=7};
+btnSet0L={cls="button";text="置100";left=560;top=56;right=656;bottom=88;font=LOGFONT(h=-24);tabstop=1;z=3};
+btnSet0R={cls="button";text="置100";left=560;top=96;right=656;bottom=128;font=LOGFONT(h=-24);tabstop=1;z=6};
+lblLineL={cls="static";text="LineL: ";left=160;top=56;right=272;bottom=96;font=LOGFONT(h=-24);transparent=1;z=1};
+lblLineR={cls="static";text="LineR: ";left=160;top=88;right=272;bottom=128;font=LOGFONT(h=-24);transparent=1;z=4};
+trbLineL={cls="trackbar";left=264;top=48;right=560;bottom=78;font=LOGFONT(h=-24);max=100;min=0;tabstop=1;z=2};
+trbLineR={cls="trackbar";left=264;top=88;right=560;bottom=118;font=LOGFONT(h=-24);max=100;min=0;tabstop=1;z=5}
+)
+/*}}*/
+
+mainForm.trbLineR.oncommand = function(id,event,pos){
+	
+	mainForm.trbLineR.pos = 50
+	
+	rotateL = (deltaLineL / r);
+	rotateR = (-deltaLineR / r);
+	rotatePen = 0.5
+	data = Action(rotateL, rotateR, rotatePen)
+	console.dump(data)
+	
+	myse.write(data)
+}
+
+mainForm.trbLineL.oncommand = function(id,event,pos){
+	if( pos ){
+		
+	}
+}
+
+
+io.open()
+import sscyan.serial
+import sscyan.wintab32
+
+
+lsSerial = sscyan.serial.list()
+console.dump(lsSerial )
+
+myse = sscyan.serial("COM3", 115200)
+
+assert(myse, "串口错误")
+
+wt32 = sscyan.wintab32(mainForm)
+
+//
+mainForm.wndproc = {
+//    [0x7FF0/*_WT_PACKET*/] = function(hwnd,message,wParam,lParam){ 
+//        pkt = wt32.getPacket(wParam)
+//
+//        console.log(pkt.pkButtons       )
+//        console.log(pkt.pkX             )
+//        console.log(pkt.pkY             )
+//        console.log(pkt.pkZ             )
+//        console.log(pkt.pkNormalPressure)
+//    }
+}
+
+
+
+Action = class{
+	ctor(rotateL=0, rotateR=0, rotatePen = 0){
+  		this.rotateL = rotateL;
+  		this.rotateR = rotateR;
+  		this.rotatePen = rotatePen;
+	}
+	float rotateL;
+	float rotateR;
+	float rotatePen;
+}
+	
+	
+pi = 3.1415926535;
+d = 155;
+r = 12.73/2;
+
+slineL = 100+35/2
+slineR = 100+35/2
+
+
+moveToPos = function(inputx, inputy){
+	x = inputx
+	x += 0.5
+	x *= d
+	y = inputy
+	y += 0.5
+	y *= d
+	
+	console.dump(x, y)
+	lineL = math.sqrt((x**2) + (y ** 2));
+	lineR = math.sqrt((d - x)** 2 + (y ** 2));
+	
+	deltaLineL = lineL - slineL
+	deltaLineR = lineR - slineR
+	rotateL = (deltaLineL / r);
+	rotateR = (-deltaLineR / r);
+	rotatePen = 0.5
+	data = Action(rotateL, rotateR, rotatePen)
+	console.dump(data)
+	
+	myse.write(data)
+	
+	slineL = lineL
+	slineR = lineR
+	//txt = myse.read() ++ '\n'++ myse.read()
+	//console.print(txt)
+}
+GoCenter = function(){
+	
+	lineL = 100+35/2
+	lineR = 100+35/2
+	
+	deltaLineL = lineL - slineL
+	deltaLineR = lineR - slineR
+	rotateL = (deltaLineL / r);
+	rotateR = (-deltaLineR / r);
+	rotatePen = 0.5
+	data = Action(rotateL, rotateR, rotatePen)
+	console.dump(data)
+	
+	myse.write(data)
+	
+	slineL = lineL
+	slineR = lineR
+	//txt = myse.read() ++ '\n'++ myse.read()
+	//console.print(txt)
+}
+mainForm.wndproc = {
+	[0x202/*_WM_LBUTTONUP*/] = function(hwnd,message,wParam,lParam){ 
+		var x,y = win.getMessagePos(lParam);
+		//io.print("左键弹起",x,y)
+		
+		var rct = mainForm.getClientRect()
+		var w = rct.right - rct.left
+		var h = rct.bottom - rct.top
+		x-=w/2
+		y-=h/2
+		x/=w
+		y/=h
+		moveToPos(x, y)
+	}
+	[0x200/*_WM_MOUSEFIRST*/] = function(hwnd,message,wParam,lParam){ 
+		var x,y = win.getMessagePos(lParam);
+		
+		var rct = mainForm.getClientRect()
+		var w = rct.right - rct.left
+		var h = rct.bottom - rct.top
+		x-=w/2
+		y-=h/2
+		x/=w
+		y/=h
+		ax = x
+		ay = y
+		
+		x += 0.5
+		x *= d
+		y += 0.5
+		y *= d
+		
+		//console.dump(x, y)
+		lineL = math.sqrt((x**2) + (y ** 2));
+		lineR = math.sqrt((d - x)** 2 + (y ** 2));
+		
+		console.dump("POS", ax, ay, lineL, lineR)
+	}
+}
+import win.inputBox
+mainForm.btnSet0R.oncommand = function(id,event){
+	ib = win.inputBox()
+	slineR = tonumber(ib.doModal())+35/2
+}
+
+
+mainForm.btnSet0L.oncommand = function(id,event){
+	//ib = win.inputBox()
+	slineL = 100+35/2
+}
+
+mainForm.btnGoCenter.oncommand = function(id,event){
+	GoCenter()
+}
+
+mainForm.show() 
+return win.loopMessage(); 

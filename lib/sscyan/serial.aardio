@@ -1,0 +1,205 @@
+﻿//serial 串口通信支持库
+///lib/sscyan/serial.aau
+
+//更新
+//# 2015/04/16 雪星(997596@gmail.com)
+//创建
+
+/*API_Comm{{*/
+//https://msdn.microsoft.com/en-us/library/windows/desktop/aa363214%28v=vs.85%29.aspx
+::DCB := class{
+    INT DCBlength;
+    INT BaudRate;
+    INT flags;
+    WORD wReserved;
+    WORD XonLim;
+    WORD XoffLim;
+    BYTE ByteSize;
+    BYTE Parity;
+    BYTE StopBits;
+    byte XonChar;
+    byte XoffChar;
+    byte ErrorChar;
+    byte EofChar;
+    byte EvtChar;
+    WORD wReserved1;
+}
+/*intellisense(::)*/
+::BuildCommDCB := ::Kernel32.api("BuildCommDCB", "void(str sdef, struct&DCB)")
+::BuildCommDCBA := ::Kernel32.api("BuildCommDCBA", "void(str sdef, struct&DCB)")
+::BuildCommDCBW := ::Kernel32.api("BuildCommDCBW", "void(str sdef, struct&DCB)")
+::GetCommState := ::Kernel32.api("GetCommState", "void(ptr file, struct&DCB)")
+::SetCommState := ::Kernel32.api("SetCommState", "void(ptr file, struct DCB)")
+/*end intellisense*/
+/**intellisense(::)
+ONESTOPBIT   = @0/*ONESTOPBIT*/
+ONE5STOPBITS = @1/*ONE5STOPBITS*/
+TWOSTOPBITS  = @2/*TWOSTOPBITS*/
+
+NOPARITY    = @0/*NOPARITY*/
+ODDPARITY   = @1/*ODDPARITY*/
+EVENPARITY  = @2/*EVENPARITY*/
+MARKPARITY  = @3/*MARKPARITY*/
+SPACEPARITY = @4/*SPACEPARITY*/
+end intellisense**/
+/*}}*/
+
+namespace sscyan{
+/*CLASS_serial{{*/
+    serial = class{
+        ctor(port, baud, mode = "r+b", cbuf = 2048){
+            //加载文件
+            if type(port) == type.number
+                port = "//./com" ++ port
+            var re = {fsys.file(port, mode)}
+            if re[1]
+                this = re[1]
+            else
+                return ..table.unpack(re)
+            //加载方法
+            this.dcbBuild    = dcbBuild
+            this.dcbBuildA   = dcbBuildA
+            this.dcbBuildW   = dcbBuildW
+            this.dcbGet      = dcbGet
+            this.dcbSet      = dcbSet
+            this.dcbmixin    = dcbmixin
+            this.initBaud    = initBaud
+            this.setBaud     = setBaud
+            this.setStopBits = setStopBits
+            this.setbuf      = setbuf
+            //初始化
+            if baud
+                this.initBaud(baud)
+            this.setbuf(cbuf)
+        }
+    }
+    namespace serial{
+        import fsys.file
+        import win.reg
+        lsBaud  = {110;300;600;1200;2400;4800;9600;14400;19200;38400;57600;115200;128000;256000;}
+        dcbBuild    = function(sdef){
+            return ::BuildCommDCB (sdef, ::DCB())
+        }
+        dcbBuildA   = function(sdef){
+            return ::BuildCommDCBA(sdef, ::DCB())
+        }
+        dcbBuildW   = function(sdef){
+            return ::BuildCommDCBW(sdef, ::DCB())
+        }
+        dcbGet      = function(){
+            return ::GetCommState(topointer(owner.hfile), ::DCB())
+        }
+        dcbSet      = function(dcb){
+            ::SetCommState(topointer(owner.hfile), dcb)
+        }
+        dcbmixin    = function(dcb){
+            owner.dcbSet(..table.mixin(owner.dcbGet(), dcb))
+        }
+        initBaud    = function(baud){
+            //等价于owner.dcbSet(owner.dcbBuild("baud=1200 parity=N data=8 stop=1"))
+            owner.dcbmixin(
+                BaudRate = tonumber(baud);
+                ByteSize = 8;
+                Parity   = 0/*NOPARITY*/;
+                StopBits = 0/*ONESTOPBIT*/;
+            )
+        }
+        setBaud     = function(v){
+            owner.dcbmixin({BaudRate = tonumber(v)})
+        }
+        setStopBits = function(v){
+            owner.dcbmixin({StopBits = tonumber(v)})
+        }
+        setbuf      = function(cbuf){
+            if type(cbuf) == type.number{
+                owner.buf = ..raw.malloc(cbuf)
+                owner.recvData = function(all = true){
+                    var ok, len = fsys.file.ReadBuffer(owner.hfile, owner.buf, # owner.buf, 0)
+                    if !ok
+                        return null
+                    var out = ..raw.tostring(owner.buf, 1, len) : ""
+                    if all ? len == # owner.buf
+                        out ++= owner.recvData(all)
+                    return out
+                }
+                owner.sendData = function(str, ...){
+                    if !#str
+                        return null
+                    var ok, len = fsys.file.WriteFile(owner.hfile, str, #str,0);
+                    if !ok
+                        return null
+                    if ...
+                        return owner.sendData(...);
+                    return true
+                }
+            }else{
+                owner.buf     = null
+                owner.recvData = function(){}
+                owner.sendData = function(){}
+            }
+        } 
+        list = function(){
+        	var reg = win.regReader("HKEY_LOCAL_MACHINE\HARDWARE\DEVICEMAP\SERIALCOMM\")
+        	if !reg return null 
+        	var list = {}
+        	for name, value, t in reg.eachValue()
+        		if type(value) == type.string
+        			list[name] = value
+        	return list
+        }
+        
+    }
+/*}}*/
+}
+
+/**intellisense(sscyan)
+serial = serial 串口通信支持库
+serial.list() = 获取可用串口，返回表。键名为设备路径，值为串口名
+end intellisense**/
+
+/**intellisense()
+sscyan.serial(.(port, baud, mode, cbuf) = 打开串口\nport   可以是句柄，端口号，或串口路径\nbaud   为波特率，省略系统将自动识别波特率\nmode   为串口打开方式，省略为"r+b"，参考文件打开方式\nbuflen 预设缓冲区长度，可用 .recvData() 读取数据，省略为2048，如设为0则 .recvData 方法不可用\n成功返回文件对象\n失败返回(null, 错误信息，错误号)\n!sscyan!serial.
+sscyan.serial() = !sscyan!serial.
+?sscyan.serial = !sscyan!serial.
+!sscyan!serial.dcbBuild("baud=1200 parity=N data=8 stop=1") = 按规则生成 ::DCB() 结构
+!sscyan!serial.dcbBuildA("baud=1200 parity=N data=8 stop=1"u) = 按规则生成 ::DCB() 结构，强制ANSI版本
+!sscyan!serial.dcbBuildW("baud=1200 parity=N data=8 stop=1"u) = 按规则生成 ::DCB() 结构，强制Unicode版本
+!sscyan!serial.dcbBuild(/*参考地址*/) = @//DCB生成规则\n//COMx[:][baud=b][parity=p][data=d][stop=s][to={on|off}][xon={on|off}][odsr={on|off}][octs={on|off}][dtr={on|off|hs}][rts={on|off|hs|tg}][idsr={on|off}]\n/*http://msdn.microsoft.com/en-us/library/windows/desktop/aa363143%28v=vs.85%29.aspx*/
+!sscyan!serial.dcbGet(dcb)   = 返回 ::DCB() 结构
+!sscyan!serial.dcbSet(dcb)   = 参数为一个 ::DCB() 结构，修改串口全部属性
+!sscyan!serial.dcbmixin(dcb) = 参数为一个表，可修改串口部分属性
+!sscyan!serial.initBaud(baud) = 初始化串口，用表{\nBaudRate = tonumber(baud);\nByteSize = 8;\nParity   = 0/*NOPARITY*/;\nStopBits = 0/*ONESTOPBIT*/;\n}
+!sscyan!serial.setBaud     = 设置串口参数，波特率
+!sscyan!serial.setStopBits = 设置串口参数，终止位
+!sscyan!serial.setbuf = 设置数据缓冲大小，设置后可用 .recvData 读取数据
+!sscyan!serial.recvData(__/*all*/) = 读取缓冲数据并返回，all默认为true，如all为false则只读取一个缓冲区的长度，，也可直接使用 .read()
+!sscyan!serial.sendData(str) = 发送数据，支持多参数，也可直接使用 .write()
+
+
+!sscyan!serial.close() = 关闭文件句柄
+!sscyan!serial.flush() = 刷新缓冲区
+!sscyan!serial.getFileTime() = 返回创建时间、最后修改时间、最后访问时间\n!filefiletimes.
+!sscyan!serial.getTime() = 返回创建时间、最后修改时间、最后访问时间\n!filetimes.
+!sscyan!serial.handle = 返回文件句柄
+!sscyan!serial.path = 返回文件路径
+!sscyan!serial.read() = 读取一行文本\n返回文本不包含回车换行符
+!sscyan!serial.read(-1) = 读取所有内容到文件尾部
+!sscyan!serial.read(__/*字节数*/) = 读取指定长度的字节\n不支持多参数
+!sscyan!serial.read({int number} ) = 参数可以是一个结构体\n不支持多参数
+!sscyan!serial.readBuffer(.(缓冲区指针,读取长度) = 成功返回读取长度,失败返回null,\n参数必须是使用raw.malloc()函数创建的缓冲区指针\n长度参数可选，默认为缓冲区长度,成功返回读取的字节长度
+!sscyan!serial.readMemory(.(内存指针,读取长度) = 自内存读取,成功返回读取长度,失败返回null,\n必须使用参数@2显示指定内存长度,\n请谨慎指定参数,指定了错误的内存地址或长度后果自负
+!sscyan!serial.seek("cur",__) = 移动至相对当前位置的指定偏移量
+!sscyan!serial.seek("end") = 移动指针至结束处\n返回当前位置,返回值大于2GB则为负值,\n获取文件大小推荐使用 size() 函数
+!sscyan!serial.seek("end",__) = 移动至相对结束处的指定偏移量
+!sscyan!serial.seek("set") = 移动指针到开始
+!sscyan!serial.seek("set",__) = 移动至相对开始处的指定偏移量
+!sscyan!serial.seek() = 得到当前位置
+!sscyan!serial.seteof() = 设置文件结束 
+!sscyan!serial.setFileTime(creation=创建时间;access=访问时间;write=修改时间) = @.setFileTime(\n  creation = fsys.time();\n   access = fsys.time();\n write = fsys.time() \n)
+!sscyan!serial.setTime(creation=创建时间;access=访问时间;write=修改时间) = @.setTime(\n  creation = time();\n    access = time();\n  write = time() \n)
+!sscyan!serial.size() = 返回文件大小\n可选参数一指定单位大小(默认自动选择),\n可选用参数二指定小数精度(默认为2)\n返回文件大小,单位大小,单位名("bytes","KB","MB","GB"等)
+!sscyan!serial.size64() = 返回文件大小\n返回值为math.size64长整数对象\n!math_size64.
+!sscyan!serial.write(__/*字符串*/) = 写入字符串\n参数也可以是数值、结构体
+!sscyan!serial.writeBuffer(.(缓冲区指针,写入长度) = 写入缓冲区,成功返回写入长度,失败返回null,\n参数一必须是使用raw.malloc()函数创建的缓冲区指针\n长度参数可选，默认为缓冲区长度.
+!sscyan!serial.writeMemory(.(内存指针,写入长度) = 写入内存,成功返回写入长度,失败返回null,\n必须使用参数@2显示指定内存长度,\n请谨慎指定参数,指定了错误的内存地址或长度后果自负
+end intellisense**/
