@@ -18,7 +18,7 @@ public:
         _reverse = reverse;
         _delay_micros = delay;
     }
-    void revolve(double revolutions){
+    void Revolve(double revolutions){
         _left_steps += revolutions * _stepsPerRevolution;
     }
     bool my_turn(){
@@ -95,49 +95,23 @@ private:
     int _percent;
 };
 
-class Blinker{
-public:
-    Servo(int pin, bool reverse){
-        _pin = pin;
-        _reverse = reverse;
-        pinMode(_pin, OUTPUT);
-    }
-    void RotateTo(float percent){
-        _percent = percent;
-        if(_reverse){
-            analogWrite(_pin, 255 * _percent);
-        }else{
-            analogWrite(_pin, 255 - 255 * _percent);
-        }
-    }
-    bool my_turn(){
-        return true;
-    }
-private:
-    int _pin;
-    bool _reverse;
-    int _percent;
-};
 // 28BYJ
-Stepper stepperL(10, 11, 12, 13, 4075.776, 1500, false);
+Stepper stepperL(10, 11, 12, 13, 4075.776, 2500, false);
 // 28BYJ
-Stepper stepperR(4, 5, 6, 7, 4075.776, 1500, true);
+Stepper stepperR(4, 5, 6, 7, 4075.776, 2500, true);
 // SG90
 Servo   servoPen(3, false);
 // Led
-Blinker blinkLed(9, false);
+//Blinker blinkLed(9, false);
 const int pinBlink = 9;
 
-
-void SetRotatePen(float rotatePen){
-    analogWrite(pinSG90, 255 * rotatePen);
-}
 struct Action{
     float revolutionsL;
     float revolutionsR;
     float rotatePen;
 };
-// Âö³å½»ÌæÊ½°ëË«¹¤´®¿ÚÒì²½ÊµÊ±Í¨ĞÅ...
+
+// è„‰å†²äº¤æ›¿å¼åŠåŒå·¥ä¸²å£å¼‚æ­¥å®æ—¶é€šä¿¡...
 bool serial_command_turn(){
     if(!Serial.available())
         return false;
@@ -146,10 +120,9 @@ bool serial_command_turn(){
     if(c != sizeof(act))
         return false;
 
-    stepperL.revolve(act.revolutionsL);
-    stepperR.revolve(act.revolutionsR);
-    SetRotatePen(act.rotatePen);
-
+    stepperL.Revolve(act.revolutionsL);
+    stepperR.Revolve(act.revolutionsR);
+    servoPen.RotateTo(act.rotatePen);
     return true;
 }
 
@@ -165,16 +138,17 @@ bool blink_turn(){
 
 void setup()
 {
-    // ³õÊ¼»¯´®¿Ú
+    // åˆå§‹åŒ–ä¸²å£
     Serial.begin(115200);
     //
-    pinMode(pinSG90, OUTPUT);
     pinMode(pinBlink, OUTPUT);
 }
 void loop()
 {
-    serial_command_turn();
     blink_turn();
+    serial_command_turn();
     stepperL.my_turn();
     stepperR.my_turn();
 }
+
+

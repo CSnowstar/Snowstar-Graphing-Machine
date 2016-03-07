@@ -23,13 +23,13 @@ Ssgm = class{
         this._se = assert(..sscyan.serial("COM3", 115200), "串口错误")
     }
     Action = class{
-        ctor(rotateL=0, rotateR=0, pitchPen=0){
-            this.rotateL = rotateL;
-            this.rotateR = rotateR;
+        ctor(revolutionsL=0, revolutionsR=0, pitchPen=0){
+            this.revolutionsL = revolutionsL;
+            this.revolutionsR = revolutionsR;
             this.pitchPen = pitchPen;
         }
-        float rotateL;
-        float rotateR;
+        float revolutionsL;
+        float revolutionsR;
         float pitchPen;
     }
     DeltaPps = function(deltaX, deltaY){
@@ -53,18 +53,19 @@ Ssgm = class{
         
     }
     ChangeLine = function(deltaLineL, deltaLineR){
-        var rotateL = (deltaLineL  / this._rL)
-        var rotateR = (-deltaLineR / this._rR)
-        return this.Rotate(rotateL, rotateR)
+        var revolutionsL = ( deltaLineL / (2 * ..math.pi * this._rL))
+        var revolutionsR = (-deltaLineR / (2 * ..math.pi * this._rR))
+        return this.Revolve(revolutionsL, revolutionsR)
     }
-    Rotate = function(roatteL, rotateR){
-        return this.SendData(roatteL, rotateR, this.pitch)
+    Revolve = function(revolutionsL, revolutionsR){
+        return this.SendData(revolutionsL, revolutionsR, this.pitchPen)
     }
     ChangePitchPen = function(pitchPen){
-        return this.SendData(this.rotateL, this.rotateR, pitchPen)
+        return this.SendData(this.revolutionsL, this.revolutionsR, pitchPen)
     }
-    SendData = function(rotateL, rotateR, pitchPen){
-        data = this.Action(rotateL, rotateR, pitchPen)
+    SendData = function(revolutionsL, revolutionsR, pitchPen){
+        data = this.Action(revolutionsL, revolutionsR, pitchPen)
+    	..console.dump(data)
 
         return this._se.write(data)
     }
@@ -96,19 +97,9 @@ rR = 14/2
 
 ssgm = Ssgm(d, k, rL, rR)
 
-
-
 // io.open()
 // import sscyan.serial
 // import sscyan.wintab32
-
-
-// lsSerial = sscyan.serial.list()
-// console.dump(lsSerial )
-
-// myse = sscyan.serial("COM3", 115200)
-
-// assert(myse, "串口错误")
 
 // wt32 = sscyan.wintab32(mainForm)
 
@@ -141,16 +132,11 @@ mainForm.wndproc = {
     }
 }
 
-import win.inputBox
 mainForm.btnSet100R.oncommand = function(id,event){
-    ib = win.inputBox()
-    slineR = tonumber(ib.doModal())+35/2
+    ssgm.lineR = 100;
 }
 
-
 mainForm.btnSet100L.oncommand = function(id,event){
-    //ib = win.inputBox()
-    slineL = 100+35/2
     ssgm.lineL = 100;
 }
 
@@ -160,13 +146,13 @@ mainForm.btnGoCenter.oncommand = function(id,event){
 }
 
 mainForm.trbLineR.oncommand = function(id,event,pos){
-    ssgm.Rotate(0, (mainForm.trbLineR.pos /100-0.5) * math.pi)
+    ssgm.Revolve(0, (mainForm.trbLineR.pos /100-0.5))
     mainForm.trbLineR.pos = 50
 }
     mainForm.trbLineR.pos = 50
 
 mainForm.trbLineL.oncommand = function(id,event,pos){
-    ssgm.Rotate((mainForm.trbLineL.pos / 100-0.5) * math.pi, 0)
+    ssgm.Revolve((mainForm.trbLineL.pos / 100-0.5), 0)
     mainForm.trbLineL.pos = 50
 }
     mainForm.trbLineL.pos = 50
