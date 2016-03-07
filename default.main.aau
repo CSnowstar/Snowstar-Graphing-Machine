@@ -4,185 +4,175 @@ import console
 mainForm = win.form(text="aardio form";right=871;bottom=663)
 mainForm.add(
 btnGoCenter={cls="button";text="归中";left=304;top=520;right=586;bottom=602;font=LOGFONT(h=-24);z=7};
-btnSet0L={cls="button";text="置100";left=560;top=56;right=656;bottom=88;font=LOGFONT(h=-24);tabstop=1;z=3};
-btnSet0R={cls="button";text="置100";left=560;top=96;right=656;bottom=128;font=LOGFONT(h=-24);tabstop=1;z=6};
+btnSet100L={cls="button";text="置100";left=560;top=56;right=656;bottom=88;font=LOGFONT(h=-24);tabstop=1;z=3};
+btnSet100R={cls="button";text="置100";left=560;top=96;right=656;bottom=128;font=LOGFONT(h=-24);tabstop=1;z=6};
 lblLineL={cls="static";text="LineL: ";left=160;top=56;right=272;bottom=96;font=LOGFONT(h=-24);transparent=1;z=1};
 lblLineR={cls="static";text="LineR: ";left=160;top=88;right=272;bottom=128;font=LOGFONT(h=-24);transparent=1;z=4};
 trbLineL={cls="trackbar";left=264;top=48;right=560;bottom=78;font=LOGFONT(h=-24);max=100;min=0;tabstop=1;z=2};
 trbLineR={cls="trackbar";left=264;top=88;right=560;bottom=118;font=LOGFONT(h=-24);max=100;min=0;tabstop=1;z=5}
 )
 /*}}*/
-
-mainForm.trbLineR.oncommand = function(id,event,pos){
-	
-	mainForm.trbLineR.pos = 50
-	
-	rotateL = (deltaLineL / r);
-	rotateR = (-deltaLineR / r);
-	rotatePen = 0.5
-	data = Action(rotateL, rotateR, rotatePen)
-	console.dump(data)
-	
-	myse.write(data)
-}
-
-mainForm.trbLineL.oncommand = function(id,event,pos){
-	if( pos ){
-		
-	}
-}
-
-
-io.open()
+console.open()
 import sscyan.serial
-import sscyan.wintab32
+Ssgm = class{
+    ctor(d, k, rL, rR){
+        this._d = d
+        this._k = k
+        this._rL = rL
+        this._rR = rR
+        this._se = assert(..sscyan.serial("COM3", 115200), "串口错误")
+    }
+    Action = class{
+        ctor(rotateL=0, rotateR=0, pitchPen=0){
+            this.rotateL = rotateL;
+            this.rotateR = rotateR;
+            this.pitchPen = pitchPen;
+        }
+        float rotateL;
+        float rotateR;
+        float pitchPen;
+    }
+    DeltaPps = function(deltaX, deltaY){
+        GoPoint(this.ptX + deltaX, this.ptY + deltaY)
+    }
+    GoPoint = function(x, y){
+        var lineL = ..math.sqrt((x - this._k / 2 - 0      ) ** 2 + (y - 0) ** 2)
+        var lineR = ..math.sqrt((x - this._k / 2 - this._d) ** 2 + (y - 0) ** 2)
+        return this.ChangeLineTo(lineL, lineR)
+    }
+    GoPointScaled = function(x, y){
+        return this.GoPoint(x * this._d, y * this._d)
+    }
+    ChangeLineTo = function(lineL, lineR){
+        var deltaLineL = lineL - this.lineL
+        var deltaLineR = lineR - this.lineR
+        
+        this.lineL = lineL
+        this.lineR = lineR
+        return this.ChangeLine(deltaLineL, deltaLineR)
+        
+    }
+    ChangeLine = function(deltaLineL, deltaLineR){
+        var rotateL = (deltaLineL  / this._rL)
+        var rotateR = (-deltaLineR / this._rR)
+        return this.Rotate(rotateL, rotateR)
+    }
+    Rotate = function(roatteL, rotateR){
+        return this.SendData(roatteL, rotateR, this.pitch)
+    }
+    ChangePitchPen = function(pitchPen){
+        return this.SendData(this.rotateL, this.rotateR, pitchPen)
+    }
+    SendData = function(rotateL, rotateR, pitchPen){
+        data = this.Action(rotateL, rotateR, pitchPen)
+
+        return this._se.write(data)
+    }
+    GoCenter = function(x, y){
+        this.GoPoint(d/2, d/2)
+    }
+    State = function(){
+        return
+            this.lineL,
+            this.lineR,
+            this.ptX,
+            this.ptY,
+            this.pitchPen
+    }
+    lineL = 0;
+    lineR = 0;
+    ptX = 0;
+    ptY = 0;
+    pitchPen = 0;
+}
+
+//wt32 = sscyan.wintab32(mainForm)
 
 
-lsSerial = sscyan.serial.list()
-console.dump(lsSerial )
+d = 150
+k = 35
+rL = 14/2
+rR = 14/2
 
-myse = sscyan.serial("COM3", 115200)
+ssgm = Ssgm(d, k, rL, rR)
 
-assert(myse, "串口错误")
 
-wt32 = sscyan.wintab32(mainForm)
 
-//
+// io.open()
+// import sscyan.serial
+// import sscyan.wintab32
+
+
+// lsSerial = sscyan.serial.list()
+// console.dump(lsSerial )
+
+// myse = sscyan.serial("COM3", 115200)
+
+// assert(myse, "串口错误")
+
+// wt32 = sscyan.wintab32(mainForm)
+
+// //
+// mainForm.wndproc = {
+// //    [0x7FF0/*_WT_PACKET*/] = function(hwnd,message,wParam,lParam){ 
+// //        pkt = wt32.getPacket(wParam)
+// //
+// //        console.log(pkt.pkButtons       )
+// //        console.log(pkt.pkX             )
+// //        console.log(pkt.pkY             )
+// //        console.log(pkt.pkZ             )
+// //        console.log(pkt.pkNormalPressure)
+// //    }
+// }
+
+
+
 mainForm.wndproc = {
-//    [0x7FF0/*_WT_PACKET*/] = function(hwnd,message,wParam,lParam){ 
-//        pkt = wt32.getPacket(wParam)
-//
-//        console.log(pkt.pkButtons       )
-//        console.log(pkt.pkX             )
-//        console.log(pkt.pkY             )
-//        console.log(pkt.pkZ             )
-//        console.log(pkt.pkNormalPressure)
-//    }
+    [0x202/*_WM_LBUTTONUP*/] = function(hwnd,message,wParam,lParam){ 
+        var x,y = win.getMessagePos(lParam);
+        
+        var rct = mainForm.getClientRect()
+        var w = rct.right - rct.left
+        var h = rct.bottom - rct.top
+        
+        ssgm.pitchPen = 0.5
+        ssgm.GoPointScaled(x / w, y / h)
+        console.log(ssgm.State())
+    }
 }
 
-
-
-Action = class{
-	ctor(rotateL=0, rotateR=0, rotatePen = 0){
-  		this.rotateL = rotateL;
-  		this.rotateR = rotateR;
-  		this.rotatePen = rotatePen;
-	}
-	float rotateL;
-	float rotateR;
-	float rotatePen;
-}
-	
-	
-pi = 3.1415926535;
-d = 155;
-r = 12.73/2;
-
-slineL = 100+35/2
-slineR = 100+35/2
-
-
-moveToPos = function(inputx, inputy){
-	x = inputx
-	x += 0.5
-	x *= d
-	y = inputy
-	y += 0.5
-	y *= d
-	
-	console.dump(x, y)
-	lineL = math.sqrt((x**2) + (y ** 2));
-	lineR = math.sqrt((d - x)** 2 + (y ** 2));
-	
-	deltaLineL = lineL - slineL
-	deltaLineR = lineR - slineR
-	rotateL = (deltaLineL / r);
-	rotateR = (-deltaLineR / r);
-	rotatePen = 0.5
-	data = Action(rotateL, rotateR, rotatePen)
-	console.dump(data)
-	
-	myse.write(data)
-	
-	slineL = lineL
-	slineR = lineR
-	//txt = myse.read() ++ '\n'++ myse.read()
-	//console.print(txt)
-}
-GoCenter = function(){
-	
-	lineL = 100+35/2
-	lineR = 100+35/2
-	
-	deltaLineL = lineL - slineL
-	deltaLineR = lineR - slineR
-	rotateL = (deltaLineL / r);
-	rotateR = (-deltaLineR / r);
-	rotatePen = 0.5
-	data = Action(rotateL, rotateR, rotatePen)
-	console.dump(data)
-	
-	myse.write(data)
-	
-	slineL = lineL
-	slineR = lineR
-	//txt = myse.read() ++ '\n'++ myse.read()
-	//console.print(txt)
-}
-mainForm.wndproc = {
-	[0x202/*_WM_LBUTTONUP*/] = function(hwnd,message,wParam,lParam){ 
-		var x,y = win.getMessagePos(lParam);
-		//io.print("左键弹起",x,y)
-		
-		var rct = mainForm.getClientRect()
-		var w = rct.right - rct.left
-		var h = rct.bottom - rct.top
-		x-=w/2
-		y-=h/2
-		x/=w
-		y/=h
-		moveToPos(x, y)
-	}
-	[0x200/*_WM_MOUSEFIRST*/] = function(hwnd,message,wParam,lParam){ 
-		var x,y = win.getMessagePos(lParam);
-		
-		var rct = mainForm.getClientRect()
-		var w = rct.right - rct.left
-		var h = rct.bottom - rct.top
-		x-=w/2
-		y-=h/2
-		x/=w
-		y/=h
-		ax = x
-		ay = y
-		
-		x += 0.5
-		x *= d
-		y += 0.5
-		y *= d
-		
-		//console.dump(x, y)
-		lineL = math.sqrt((x**2) + (y ** 2));
-		lineR = math.sqrt((d - x)** 2 + (y ** 2));
-		
-		console.dump("POS", ax, ay, lineL, lineR)
-	}
-}
 import win.inputBox
-mainForm.btnSet0R.oncommand = function(id,event){
-	ib = win.inputBox()
-	slineR = tonumber(ib.doModal())+35/2
+mainForm.btnSet100R.oncommand = function(id,event){
+    ib = win.inputBox()
+    slineR = tonumber(ib.doModal())+35/2
 }
 
 
-mainForm.btnSet0L.oncommand = function(id,event){
-	//ib = win.inputBox()
-	slineL = 100+35/2
+mainForm.btnSet100L.oncommand = function(id,event){
+    //ib = win.inputBox()
+    slineL = 100+35/2
+    ssgm.lineL = 100;
 }
 
 mainForm.btnGoCenter.oncommand = function(id,event){
-	GoCenter()
+    ssgm.pitchPen = 0.5
+    ssgm.GoCenter()
 }
 
+mainForm.trbLineR.oncommand = function(id,event,pos){
+    ssgm.Rotate(0, (mainForm.trbLineR.pos /100-0.5) * math.pi)
+    mainForm.trbLineR.pos = 50
+}
+    mainForm.trbLineR.pos = 50
+
+mainForm.trbLineL.oncommand = function(id,event,pos){
+    ssgm.Rotate((mainForm.trbLineL.pos / 100-0.5) * math.pi, 0)
+    mainForm.trbLineL.pos = 50
+}
+    mainForm.trbLineL.pos = 50
+
+
+
+
 mainForm.show() 
-return win.loopMessage(); 
+return win.loopMessage();

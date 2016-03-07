@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="gb2312"?>
-<project ver="8.1" name="Ñ©ÐÇÍ¼»­»ú" libEmbed="true" icon="..." ui="win" output="aardio¹¤³Ì15.exe" CompanyName="SnowstarCyan" FileDescription="Ñ©ÐÇÍ¼»­»ú" LegalCopyright="Copyright (C) SnowstarCyan 2015" ProductName="Ñ©ÐÇÍ¼»­»ú" InternalName="Ñ©ÐÇÍ¼»­»ú" FileVersion="0.0.0.1" ProductVersion="0.0.0.1" publishDir="/Publish/">
+ï»¿<?xml version="1.0" encoding="utf-8"?>
+<project ver="10" name="é›ªæ˜Ÿå›¾ç”»æœº" libEmbed="true" icon="..." ui="win" output="aardioå·¥ç¨‹15.exe" CompanyName="SnowstarCyan" FileDescription="é›ªæ˜Ÿå›¾ç”»æœº" LegalCopyright="Copyright (C) SnowstarCyan 2015" ProductName="é›ªæ˜Ÿå›¾ç”»æœº" InternalName="é›ªæ˜Ÿå›¾ç”»æœº" FileVersion="0.0.0.1" ProductVersion="0.0.0.1" publishDir="/Publish/" dstrip="false">
 	<file name="main.aau" path="default.main.aau" comment="default.main.aau"/>
-	<folder name="×ÊÔ´ÎÄ¼þ" path="res" embed="true"/>
+	<folder name="èµ„æºæ–‡ä»¶" path="res" embed="true"/>
 </project>
