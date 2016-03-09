@@ -3,15 +3,23 @@ import console
 /*DSG{{*/
 mainForm = win.form(text="aardio form";right=871;bottom=663)
 mainForm.add(
-btnGoCenter={cls="button";text="归中";left=304;top=520;right=586;bottom=602;font=LOGFONT(h=-24);z=7};
-btnSet100L={cls="button";text="置100";left=560;top=56;right=656;bottom=88;font=LOGFONT(h=-24);tabstop=1;z=3};
-btnSet100R={cls="button";text="置100";left=560;top=96;right=656;bottom=128;font=LOGFONT(h=-24);tabstop=1;z=6};
-lblLineL={cls="static";text="LineL: ";left=160;top=56;right=272;bottom=96;font=LOGFONT(h=-24);transparent=1;z=1};
-lblLineR={cls="static";text="LineR: ";left=160;top=88;right=272;bottom=128;font=LOGFONT(h=-24);transparent=1;z=4};
+btn5Revole={cls="button";text="2圈长度测试";left=600;top=576;right=864;bottom=656;font=LOGFONT(h=-28);z=7};
+btnGoCenter={cls="button";text="归中";left=304;top=576;right=586;bottom=658;font=LOGFONT(h=-24);z=6};
+btnResetLine={cls="button";text="校准位置(k/2,0)";left=560;top=48;right=776;bottom=120;font=LOGFONT(h=-24);tabstop=1;z=3};
+lblLineL={cls="static";text="LineL: ";left=56;top=56;right=272;bottom=96;font=LOGFONT(h=-24);notify=1;transparent=1;z=1};
+lblLineR={cls="static";text="LineR: ";left=56;top=88;right=272;bottom=128;font=LOGFONT(h=-24);transparent=1;z=4};
 trbLineL={cls="trackbar";left=264;top=48;right=560;bottom=78;font=LOGFONT(h=-24);max=100;min=0;tabstop=1;z=2};
 trbLineR={cls="trackbar";left=264;top=88;right=560;bottom=118;font=LOGFONT(h=-24);max=100;min=0;tabstop=1;z=5}
 )
 /*}}*/
+
+mainForm.lblLineL.oncommand = function(id,event){
+	//mainForm.msgbox( mainForm.lblLineL.text );
+	
+	
+}
+
+
 console.open()
 import sscyan.serial
 Ssgm = class{
@@ -46,15 +54,12 @@ Ssgm = class{
     ChangeLineTo = function(lineL, lineR){
         var deltaLineL = lineL - this.lineL
         var deltaLineR = lineR - this.lineR
-        
-        this.lineL = lineL
-        this.lineR = lineR
         return this.ChangeLine(deltaLineL, deltaLineR)
         
     }
     ChangeLine = function(deltaLineL, deltaLineR){
-        var revolutionsL = ( deltaLineL / (2 * ..math.pi * this._rL))
-        var revolutionsR = (-deltaLineR / (2 * ..math.pi * this._rR))
+        var revolutionsL = (-deltaLineL / (2 * ..math.pi * this._rL))
+        var revolutionsR = ( deltaLineR / (2 * ..math.pi * this._rR))
         return this.Revolve(revolutionsL, revolutionsR)
     }
     Revolve = function(revolutionsL, revolutionsR){
@@ -64,6 +69,8 @@ Ssgm = class{
         return this.SendData(this.revolutionsL, this.revolutionsR, pitchPen)
     }
     SendData = function(revolutionsL, revolutionsR, pitchPen){
+        this.lineL += - revolutionsL * (2 * ..math.pi * this._rL)
+        this.lineR +=   revolutionsR * (2 * ..math.pi * this._rR)
         data = this.Action(revolutionsL, revolutionsR, pitchPen)
     	..console.dump(data)
 
@@ -90,13 +97,19 @@ Ssgm = class{
 //wt32 = sscyan.wintab32(mainForm)
 
 
-d = 150
-k = 35
-rL = 14/2
-rR = 14/2
+d = 155
+k = 38
+rL = 3.26036
+rR = 3.26036
 
 ssgm = Ssgm(d, k, rL, rR)
 
+UpdateLines = function(){
+	var lineL, lineR, x, y = ssgm.State()
+	mainForm.lblLineL.text = "LineL: " ++ ..string.format("[%0.2f]", lineL)
+	mainForm.lblLineR.text = "LineR: " ++ ..string.format("[%0.2f]", lineR)
+	mainForm.text = "雪星图画机" ++ ..string.format("[%0.2f, %0.2f]", x, y)
+}
 // io.open()
 // import sscyan.serial
 // import sscyan.wintab32
@@ -128,34 +141,42 @@ mainForm.wndproc = {
         
         ssgm.pitchPen = 0.5
         ssgm.GoPointScaled(x / w, y / h)
-        console.log(ssgm.State())
+        UpdateLines()
     }
 }
 
-mainForm.btnSet100R.oncommand = function(id,event){
-    ssgm.lineR = 100;
-}
-
-mainForm.btnSet100L.oncommand = function(id,event){
-    ssgm.lineL = 100;
+mainForm.btnResetLine.oncommand = function(id,event){
+    ssgm.lineL = 0;
+    ssgm.lineR = ssgm._d - ssgm._k;
+    ssgm.ptX = ssgm._k / 2;
+    ssgm.ptY = 0; 
+    UpdateLines()
 }
 
 mainForm.btnGoCenter.oncommand = function(id,event){
     ssgm.pitchPen = 0.5
     ssgm.GoCenter()
+    UpdateLines()
 }
 
 mainForm.trbLineR.oncommand = function(id,event,pos){
-    ssgm.Revolve(0, (mainForm.trbLineR.pos /100-0.5))
+    ssgm.Revolve(0, ((mainForm.trbLineR.pos-50) / 50))
+    UpdateLines()
     mainForm.trbLineR.pos = 50
 }
-    mainForm.trbLineR.pos = 50
+mainForm.trbLineR.pos = 50
 
 mainForm.trbLineL.oncommand = function(id,event,pos){
-    ssgm.Revolve((mainForm.trbLineL.pos / 100-0.5), 0)
+    ssgm.Revolve(((mainForm.trbLineL.pos-50) / 50), 0)
+    UpdateLines()
     mainForm.trbLineL.pos = 50
 }
-    mainForm.trbLineL.pos = 50
+mainForm.trbLineL.pos = 50
+
+
+mainForm.btn5Revole.oncommand = function(id,event){
+    ssgm.Revolve(-2,2)
+}
 
 
 

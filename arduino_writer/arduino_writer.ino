@@ -23,8 +23,9 @@ public:
     }
     bool my_turn(){
         ulong now_micros = micros();
-        if(now_micros - _last_micros < _delay_micros)
+        if(now_micros - _last_micros < _delay_micros){
             return false;
+        }
         //
         if(_left_steps == 0)
             return false;
@@ -69,6 +70,7 @@ private:
     uint _step = 0;
     int _left_steps = 0;
     const double pi = 3.1415926535;
+    const double e = 2.71828;
 };
 
 class Servo{
@@ -85,10 +87,7 @@ public:
         }else{
             analogWrite(_pin, 255 - 255 * _percent);
         }
-    }
-    bool my_turn(){
-        return true;
-    }
+    } 
 private:
     int _pin;
     bool _reverse;
@@ -96,9 +95,9 @@ private:
 };
 
 // 28BYJ
-Stepper stepperL(10, 11, 12, 13, 4075.776, 2500, false);
+Stepper stepperL(4075.776, 10, 11, 12, 13, 1800, false);
 // 28BYJ
-Stepper stepperR(4, 5, 6, 7, 4075.776, 2500, true);
+Stepper stepperR(4075.776, 4, 5, 6, 7, 1800, true);
 // SG90
 Servo   servoPen(3, false);
 // Led
@@ -150,5 +149,8 @@ void loop()
     stepperL.my_turn();
     stepperR.my_turn();
 }
+
+
+
 
 
