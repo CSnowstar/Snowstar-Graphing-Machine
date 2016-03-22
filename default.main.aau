@@ -1,11 +1,11 @@
-import win.ui;
+﻿import win.ui;
 import console
 /*DSG{{*/
 mainForm = win.form(text="aardio form";right=871;bottom=663)
 mainForm.add(
-btn5Revole={cls="button";text="2圈长度测试";left=600;top=576;right=864;bottom=656;font=LOGFONT(h=-28);z=7};
 btnGoCenter={cls="button";text="归中";left=304;top=576;right=586;bottom=658;font=LOGFONT(h=-24);z=6};
 btnResetLine={cls="button";text="校准位置(k/2,0)";left=560;top=48;right=776;bottom=120;font=LOGFONT(h=-24);tabstop=1;z=3};
+btnUnitTest={cls="button";text="运行单元测试";left=600;top=576;right=864;bottom=656;font=LOGFONT(h=-28);z=7};
 lblLineL={cls="static";text="LineL: ";left=56;top=56;right=272;bottom=96;font=LOGFONT(h=-24);notify=1;transparent=1;z=1};
 lblLineR={cls="static";text="LineR: ";left=56;top=88;right=272;bottom=128;font=LOGFONT(h=-24);transparent=1;z=4};
 trbLineL={cls="trackbar";left=264;top=48;right=560;bottom=78;font=LOGFONT(h=-24);max=100;min=0;tabstop=1;z=2};
@@ -23,12 +23,12 @@ mainForm.lblLineL.oncommand = function(id,event){
 console.open()
 import sscyan.serial
 Ssgm = class{
-    ctor(d, k, rL, rR){
+    ctor(serialName, d, k, rL, rR){
         this._d = d
         this._k = k
         this._rL = rL
         this._rR = rR
-        this._se = assert(..sscyan.serial("COM3", 115200), "串口错误")
+        this._se = assert(..sscyan.serial(serialName, 115200), "串口错误")
     }
     Action = class{
         ctor(revolutionsL=0, revolutionsR=0, pitchPen=0){
@@ -102,7 +102,7 @@ k = 38
 rL = 3.26036
 rR = 3.26036
 
-ssgm = Ssgm(d, k, rL, rR)
+ssgm = Ssgm("COM4", d, k, rL, rR)
 
 UpdateLines = function(){
 	var lineL, lineR, x, y = ssgm.State()
@@ -174,8 +174,26 @@ mainForm.trbLineL.oncommand = function(id,event,pos){
 mainForm.trbLineL.pos = 50
 
 
-mainForm.btn5Revole.oncommand = function(id,event){
-    ssgm.Revolve(-2,2)
+mainForm.btnUnitTest.oncommand = function(id,event){
+	UserChecking = function(txt){
+		return mainForm.msgbox(txt,"单元测试")
+	}
+	
+    //放2圈
+	if!UserChecking("放线2圈")return;
+    ssgm.Revolve(-2,  2)
+    
+    //收2圈
+    if!UserChecking("收线2圈")return;
+    ssgm.Revolve( 2, -2)
+    
+    //放20mm
+    if!UserChecking("放线20mm")return;
+    ssgm.ChangeLine( 20,  20)
+    
+    //收20mm
+    if!UserChecking("收线20mm")return;
+    ssgm.ChangeLine(-20, -20)
 }
 
 
